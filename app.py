@@ -1,31 +1,28 @@
 from flask import Flask, render_template, request
 import qrcode
-from io import BytesIO
-import base64
+import random
+import time
 
 app = Flask(__name__)
 
+# دالة توليد الكود بالصيغة الصحيحة
+def generate_custom_code():
+    fixed_part_1 = "0100000000"
+    random_part = "".join(str(random.randint(0, 9)) for _ in range(6))  # 6 أرقام عشوائية
+    fixed_part_2 = "1725073110ve090a#2127608752238"
+
+    return f"{fixed_part_1}{random_part}{fixed_part_2}"
+
 @app.route("/", methods=["GET", "POST"])
 def index():
-    qr_base = "0100000000"
-    suffix = "1725073110ve090a#2127608752238"
-    
-    qr_code_img = None
+    qr_code_data = None
+
     if request.method == "POST":
-        user_input = request.form["user_code"]
-        full_code = qr_base + user_input + suffix
+        qr_code_data = generate_custom_code()  # توليد الكود الجديد
+        qr = qrcode.make(qr_code_data)
+        qr.save("static/qrcode.png")  # حفظ الصورة داخل مجلد static
 
-        # توليد كود QR
-        qr = qrcode.make(full_code)
-        buffer = BytesIO()
-        qr.save(buffer, format="PNG")
-        buffer.seek(0)
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-        qr_code_img = f"data:image/png;base64,{qr_base64}"
-
-    return render_template("index.html", qr_code_img=qr_code_img)
+    return render_template("index.html", qr_code_data=qr_code_data)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+    app.run(debug=True)
